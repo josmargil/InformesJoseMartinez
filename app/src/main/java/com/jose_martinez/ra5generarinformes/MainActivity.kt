@@ -1,5 +1,10 @@
 package com.jose_martinez.ra5generarinformes
 
+import android.content.Intent
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.net.Uri
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -8,11 +13,9 @@ import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import org.json.JSONArray
+import kotlin.math.min
 
 class MainActivity : AppCompatActivity() {
     private lateinit var spinnerCiudad: Spinner
@@ -22,14 +25,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textoSalarioTotal: TextView
     private lateinit var textoSalarioMedio: TextView
     private lateinit var textoSalarioMaximo: TextView
+    private lateinit var textoSalarioMinimo: TextView
+    private lateinit var textoMejorOferta: TextView
     private lateinit var contenedorOfertas: LinearLayout
     private lateinit var barraValencia: ProgressBar
     private lateinit var barraMadrid: ProgressBar
     private lateinit var barraAlicante: ProgressBar
-
     private lateinit var textoCantidadValencia: TextView
     private lateinit var textoCantidadMadrid: TextView
     private lateinit var textoCantidadAlicante: TextView
+    private lateinit var botonExportarPdf: Button
+    private lateinit var contenedorInforme: LinearLayout
+
+
+    private val codigoCrearPdf = 100
     private val ofertas = ArrayList<Oferta>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +58,9 @@ class MainActivity : AppCompatActivity() {
         textoSalarioTotal = findViewById(R.id.textoSalarioTotal)
         textoSalarioMedio = findViewById(R.id.textoSalarioMedio)
         textoSalarioMaximo = findViewById(R.id.textoSalarioMaximo)
+        textoSalarioMinimo = findViewById(R.id.textoSalarioMinimo)
+        textoMejorOferta = findViewById(R.id.textoMejorOferta)
+
         contenedorOfertas = findViewById(R.id.contenedorOfertas)
         barraValencia = findViewById(R.id.barraValencia)
         barraMadrid = findViewById(R.id.barraMadrid)
@@ -56,6 +68,8 @@ class MainActivity : AppCompatActivity() {
         textoCantidadValencia = findViewById(R.id.textoCantidadValencia)
         textoCantidadMadrid = findViewById(R.id.textoCantidadMadrid)
         textoCantidadAlicante = findViewById(R.id.textoCantidadAlicante)
+        botonExportarPdf = findViewById(R.id.botonExportarPdf)
+        contenedorInforme = findViewById(R.id.contenedorInforme)
 
 
         botonGenerarInforme.setOnClickListener {
@@ -66,8 +80,16 @@ class MainActivity : AppCompatActivity() {
         }
 
 
+        botonExportarPdf.setOnClickListener {
+            val ciudad = spinnerCiudad.selectedItem.toString()
+            val ofertasFiltradas = filtrarOfertasPorCiudad(ciudad)
 
-        Toast.makeText(this, "Ofertas cargadas: ${ofertas.size}", Toast.LENGTH_LONG).show()
+            mostrarResultado(ciudad, ofertasFiltradas)
+
+            contenedorInforme.post {
+                abrirSelectorParaGuardarPdf()
+            }
+        }
     }
 
     private fun configurarSpinner() {
@@ -134,12 +156,21 @@ class MainActivity : AppCompatActivity() {
         }
 
         val salarioMaximo = ofertasFiltradas.maxOfOrNull { it.salario } ?: 0
+        val salarioMinimo = ofertasFiltradas.minOfOrNull { it.salario } ?: 0
+        val mejorOferta = ofertasFiltradas.maxByOrNull { it.salario }
 
         textoCiudadSeleccionada.text = "Ciudad seleccionada: $ciudad"
         textoNumeroOfertas.text = "Número de ofertas: $numeroOfertas"
         textoSalarioTotal.text = "Salario total: $salarioTotal €"
         textoSalarioMedio.text = "Salario medio: $salarioMedio €"
         textoSalarioMaximo.text = "Salario máximo: $salarioMaximo €"
+        textoSalarioMinimo.text = "Salario mínimo: $salarioMinimo €"
+
+        if (mejorOferta != null) {
+            textoMejorOferta.text = "Mejor oferta: ${mejorOferta.puesto} - ${mejorOferta.empresa} (${mejorOferta.salario} €)"
+        } else {
+            textoMejorOferta.text = "No hay ofertas disponibles"
+        }
 
         mostrarGrafico(ofertasFiltradas)
 
@@ -181,6 +212,97 @@ class MainActivity : AppCompatActivity() {
         textoCantidadMadrid.text = ofertasMadrid.toString()
         textoCantidadAlicante.text = ofertasAlicante.toString()
     }
+
+
+    private fun abrirSelectorParaGuardarPdf() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT)
+
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+        intent.type = "application/pdf"
+        intent.putExtra(Intent.EXTRA_TITLE, "informe_${spinnerCiudad.selectedItem}.pdf")
+
+        startActivityForResult(intent, codigoCrearPdf)
+    }
+
+
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?
+    ) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == codigoCrearPdf && resultCode == RESULT_OK) {
+            val uriPdf = data?.data
+
+            if (uriPdf != null) {
+                exportarInformePdf(uriPdf)
+            }
+        }
+    }
+
+
+    private fun exportarInformePdf(uriPdf: Uri) {
+
+        val documentoPdf = PdfDocument()
+
+        val pagina = PdfDocument.PageInfo.Builder(595, 842, 1).create()
+        val paginaPdf = documentoPdf.startPage(pagina)
+
+        val canvas = paginaPdf.canvas
+
+        val pinturaTitulo = Paint()
+        pinturaTitulo.color = Color.BLACK
+        pinturaTitulo.textSize = 24f
+        pinturaTitulo.isFakeBoldText = true
+
+        canvas.drawColor(Color.WHITE)
+        canvas.drawText("Informe de ofertas", 32f, 48f, pinturaTitulo)
+
+        val anchoDisponible = 531f
+        val altoDisponible = 760f
+
+        val anchoInforme = contenedorInforme.width
+        val altoInforme = contenedorInforme.height
+
+        if (anchoInforme > 0 && altoInforme > 0) {
+            val escala = min(
+                anchoDisponible / anchoInforme,
+                altoDisponible / altoInforme
+            )
+
+            canvas.save()
+            canvas.translate(32f, 72f)
+            canvas.scale(escala, escala)
+
+            contenedorInforme.draw(canvas)
+
+            canvas.restore()
+        }
+
+        documentoPdf.finishPage(paginaPdf)
+
+        try {
+            val salida = contentResolver.openOutputStream(uriPdf)
+
+            if (salida != null) {
+                salida.use {
+                    documentoPdf.writeTo(it)
+                }
+
+                Toast.makeText(this, "PDF guardado", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "No se pudo guardar el PDF", Toast.LENGTH_LONG).show()
+            }
+
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error al guardar el PDF", Toast.LENGTH_LONG).show()
+
+        } finally {
+            documentoPdf.close()
+        }
+    }
+
 
 
 }
