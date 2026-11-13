@@ -3,25 +3,16 @@ package com.jose_martinez.ra5generarinformes
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Spinner
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import org.json.JSONArray
 
 class MainActivity : AppCompatActivity() {
-    /*
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-    }
-    */
     private lateinit var spinnerCiudad: Spinner
+    private val ofertas = ArrayList<Oferta>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,6 +22,10 @@ class MainActivity : AppCompatActivity() {
         spinnerCiudad = findViewById(R.id.spinnerCiudad)
 
         configurarSpinner()
+
+        ofertas.addAll(cargarOfertas())
+
+        Toast.makeText(this, "Ofertas cargadas: ${ofertas.size}", Toast.LENGTH_LONG).show()
     }
 
     private fun configurarSpinner() {
@@ -47,5 +42,31 @@ class MainActivity : AppCompatActivity() {
         )
 
         spinnerCiudad.adapter = adaptador
+    }
+
+    private fun cargarOfertas(): ArrayList<Oferta> {
+        val listaOfertas = ArrayList<Oferta>()
+
+        val textoJson = assets.open("ofertas.json")
+            .bufferedReader()
+            .use { it.readText() }
+
+        val arrayJson = JSONArray(textoJson)
+
+        for (i in 0 until arrayJson.length()) {
+            val objetoJson = arrayJson.getJSONObject(i)
+
+            val oferta = Oferta(
+                objetoJson.getInt("id"),
+                objetoJson.getString("puesto"),
+                objetoJson.getString("empresa"),
+                objetoJson.getString("ciudad"),
+                objetoJson.getInt("salario")
+            )
+
+            listaOfertas.add(oferta)
+        }
+
+        return listaOfertas
     }
 }
