@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "puesto": "Desarrollador Android Junior",
+    "empresa": "TecnoLevante",
+    "ciudad": "Valencia",
+    "salario": 21000
+  },
+  {
+    "id": 2,
+    "puesto": "Programador Kotlin Junior",
+    "empresa": "AppSoluciones",
+    "ciudad": "Valencia",
+    "salario": 22000
+  }
+]
