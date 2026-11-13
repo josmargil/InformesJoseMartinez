@@ -3,6 +3,7 @@ package com.jose_martinez.ra5generarinformes
 import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -17,6 +18,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var botonGenerarInforme: Button
     private lateinit var textoCiudadSeleccionada: TextView
     private lateinit var textoNumeroOfertas: TextView
+    private lateinit var textoSalarioTotal: TextView
+    private lateinit var textoSalarioMedio: TextView
+    private lateinit var textoSalarioMaximo: TextView
+    private lateinit var contenedorOfertas: LinearLayout
     private val ofertas = ArrayList<Oferta>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,14 +38,19 @@ class MainActivity : AppCompatActivity() {
         botonGenerarInforme = findViewById(R.id.botonGenerarInforme)
         textoCiudadSeleccionada = findViewById(R.id.textoCiudadSeleccionada)
         textoNumeroOfertas = findViewById(R.id.textoNumeroOfertas)
+        textoSalarioTotal = findViewById(R.id.textoSalarioTotal)
+        textoSalarioMedio = findViewById(R.id.textoSalarioMedio)
+        textoSalarioMaximo = findViewById(R.id.textoSalarioMaximo)
+        contenedorOfertas = findViewById(R.id.contenedorOfertas)
+
 
         botonGenerarInforme.setOnClickListener {
             val ciudad = spinnerCiudad.selectedItem.toString()
             val ofertasFiltradas = filtrarOfertasPorCiudad(ciudad)
 
-            textoCiudadSeleccionada.text = "Ciudad seleccionada: $ciudad"
-            textoNumeroOfertas.text = "Número de ofertas: ${ofertasFiltradas.size}"
+            mostrarResultado(ciudad, ofertasFiltradas)
         }
+
 
 
         Toast.makeText(this, "Ofertas cargadas: ${ofertas.size}", Toast.LENGTH_LONG).show()
@@ -96,5 +106,43 @@ class MainActivity : AppCompatActivity() {
             ofertas.filter { it.ciudad == ciudad }
         }
     }
+
+
+    private fun mostrarResultado(ciudad: String, ofertasFiltradas: List<Oferta>) {
+
+        val numeroOfertas = ofertasFiltradas.size
+        val salarioTotal = ofertasFiltradas.sumOf { it.salario }
+
+        val salarioMedio = if (ofertasFiltradas.isNotEmpty()) {
+            salarioTotal / numeroOfertas
+        } else {
+            0
+        }
+
+        val salarioMaximo = ofertasFiltradas.maxOfOrNull { it.salario } ?: 0
+
+        textoCiudadSeleccionada.text = "Ciudad seleccionada: $ciudad"
+        textoNumeroOfertas.text = "Número de ofertas: $numeroOfertas"
+        textoSalarioTotal.text = "Salario total: $salarioTotal €"
+        textoSalarioMedio.text = "Salario medio: $salarioMedio €"
+        textoSalarioMaximo.text = "Salario máximo: $salarioMaximo €"
+
+        contenedorOfertas.removeAllViews()
+
+        for (i in ofertasFiltradas.indices) {
+            val oferta = ofertasFiltradas[i]
+
+            val textoOferta = TextView(this)
+
+            textoOferta.text = "${i + 1}. ${oferta.puesto}\n" +
+                    "${oferta.empresa} - ${oferta.ciudad} - ${oferta.salario} €"
+
+            textoOferta.textSize = 16f
+            textoOferta.setPadding(0, 0, 0, 24)
+
+            contenedorOfertas.addView(textoOferta)
+        }
+    }
+
 
 }
