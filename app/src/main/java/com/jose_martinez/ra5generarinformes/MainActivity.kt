@@ -2,7 +2,9 @@ package com.jose_martinez.ra5generarinformes
 
 import android.os.Bundle
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -12,6 +14,9 @@ import org.json.JSONArray
 
 class MainActivity : AppCompatActivity() {
     private lateinit var spinnerCiudad: Spinner
+    private lateinit var botonGenerarInforme: Button
+    private lateinit var textoCiudadSeleccionada: TextView
+    private lateinit var textoNumeroOfertas: TextView
     private val ofertas = ArrayList<Oferta>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +29,19 @@ class MainActivity : AppCompatActivity() {
         configurarSpinner()
 
         ofertas.addAll(cargarOfertas())
+
+        botonGenerarInforme = findViewById(R.id.botonGenerarInforme)
+        textoCiudadSeleccionada = findViewById(R.id.textoCiudadSeleccionada)
+        textoNumeroOfertas = findViewById(R.id.textoNumeroOfertas)
+
+        botonGenerarInforme.setOnClickListener {
+            val ciudad = spinnerCiudad.selectedItem.toString()
+            val ofertasFiltradas = filtrarOfertasPorCiudad(ciudad)
+
+            textoCiudadSeleccionada.text = "Ciudad seleccionada: $ciudad"
+            textoNumeroOfertas.text = "Número de ofertas: ${ofertasFiltradas.size}"
+        }
+
 
         Toast.makeText(this, "Ofertas cargadas: ${ofertas.size}", Toast.LENGTH_LONG).show()
     }
@@ -69,4 +87,14 @@ class MainActivity : AppCompatActivity() {
 
         return listaOfertas
     }
+
+
+    private fun filtrarOfertasPorCiudad(ciudad: String): List<Oferta> {
+        return if (ciudad == "Todas") {
+            ofertas
+        } else {
+            ofertas.filter { it.ciudad == ciudad }
+        }
+    }
+
 }
