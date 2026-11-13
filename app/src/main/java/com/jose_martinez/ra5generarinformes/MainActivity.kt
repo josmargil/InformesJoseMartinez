@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -22,6 +23,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textoSalarioMedio: TextView
     private lateinit var textoSalarioMaximo: TextView
     private lateinit var contenedorOfertas: LinearLayout
+    private lateinit var barraValencia: ProgressBar
+    private lateinit var barraMadrid: ProgressBar
+    private lateinit var barraAlicante: ProgressBar
+
+    private lateinit var textoCantidadValencia: TextView
+    private lateinit var textoCantidadMadrid: TextView
+    private lateinit var textoCantidadAlicante: TextView
     private val ofertas = ArrayList<Oferta>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,6 +50,12 @@ class MainActivity : AppCompatActivity() {
         textoSalarioMedio = findViewById(R.id.textoSalarioMedio)
         textoSalarioMaximo = findViewById(R.id.textoSalarioMaximo)
         contenedorOfertas = findViewById(R.id.contenedorOfertas)
+        barraValencia = findViewById(R.id.barraValencia)
+        barraMadrid = findViewById(R.id.barraMadrid)
+        barraAlicante = findViewById(R.id.barraAlicante)
+        textoCantidadValencia = findViewById(R.id.textoCantidadValencia)
+        textoCantidadMadrid = findViewById(R.id.textoCantidadMadrid)
+        textoCantidadAlicante = findViewById(R.id.textoCantidadAlicante)
 
 
         botonGenerarInforme.setOnClickListener {
@@ -127,6 +141,8 @@ class MainActivity : AppCompatActivity() {
         textoSalarioMedio.text = "Salario medio: $salarioMedio €"
         textoSalarioMaximo.text = "Salario máximo: $salarioMaximo €"
 
+        mostrarGrafico(ofertasFiltradas)
+
         contenedorOfertas.removeAllViews()
 
         for (i in ofertasFiltradas.indices) {
@@ -142,6 +158,28 @@ class MainActivity : AppCompatActivity() {
 
             contenedorOfertas.addView(textoOferta)
         }
+    }
+
+
+    private fun mostrarGrafico(ofertasFiltradas: List<Oferta>) {
+
+        val ofertasValencia = ofertasFiltradas.count { it.ciudad == "Valencia" }
+        val ofertasMadrid = ofertasFiltradas.count { it.ciudad == "Madrid" }
+        val ofertasAlicante = ofertasFiltradas.count { it.ciudad == "Alicante" }
+
+        val valorMaximo = maxOf(ofertasValencia, ofertasMadrid, ofertasAlicante, 1)
+
+        barraValencia.max = valorMaximo
+        barraMadrid.max = valorMaximo
+        barraAlicante.max = valorMaximo
+
+        barraValencia.progress = ofertasValencia
+        barraMadrid.progress = ofertasMadrid
+        barraAlicante.progress = ofertasAlicante
+
+        textoCantidadValencia.text = ofertasValencia.toString()
+        textoCantidadMadrid.text = ofertasMadrid.toString()
+        textoCantidadAlicante.text = ofertasAlicante.toString()
     }
 
 
